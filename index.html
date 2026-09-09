@@ -23,23 +23,22 @@ canvas {
     display: block;
 }
 
-#menu {
+#menu,
+#gameOver {
     position: fixed;
     inset: 0;
+    z-index: 20;
     display: flex;
     justify-content: center;
     align-items: center;
-    background:
-        linear-gradient(rgba(0,0,0,.65), rgba(0,0,0,.8)),
-        #26351f;
+    background: rgba(0,0,0,.78);
     color: white;
-    z-index: 10;
 }
 
 .box {
     width: min(90%, 500px);
     padding: 35px;
-    background: rgba(20,25,20,.95);
+    background: rgba(20,25,20,.97);
     border: 2px solid #59694f;
     border-radius: 18px;
     text-align: center;
@@ -47,8 +46,8 @@ canvas {
 }
 
 h1 {
-    font-size: 42px;
-    margin-bottom: 10px;
+    font-size: 40px;
+    margin-bottom: 12px;
 }
 
 .subtitle {
@@ -56,7 +55,9 @@ h1 {
     margin-bottom: 25px;
 }
 
-input, select, button {
+input,
+select,
+button {
     width: 100%;
     padding: 14px;
     margin: 8px 0;
@@ -78,14 +79,6 @@ button:hover {
 
 #gameOver {
     display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 20;
-    justify-content: center;
-    align-items: center;
-    background: rgba(0,0,0,.78);
-    color: white;
-    text-align: center;
 }
 
 #hud {
@@ -94,11 +87,28 @@ button:hover {
     left: 15px;
     z-index: 5;
     color: white;
-    background: rgba(0,0,0,.55);
+    background: rgba(0,0,0,.60);
     padding: 12px 18px;
     border-radius: 12px;
     font-size: 17px;
-    line-height: 1.6;
+    line-height: 1.7;
+    min-width: 180px;
+}
+
+.healthBox {
+    width: 160px;
+    height: 14px;
+    background: #333;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+#healthBar {
+    height: 100%;
+    width: 100%;
+    background: #28c840;
+    transition: width .15s;
 }
 
 #crosshair {
@@ -117,11 +127,15 @@ button:hover {
     bottom: 15px;
     left: 15px;
     color: white;
-    background: rgba(0,0,0,.45);
+    background: rgba(0,0,0,.5);
     padding: 8px 12px;
     border-radius: 8px;
     z-index: 5;
     font-size: 13px;
+}
+
+#reloadText {
+    color: #ffd84d;
 }
 </style>
 </head>
@@ -131,7 +145,7 @@ button:hover {
 <div id="menu">
     <div class="box">
         <h1>⚔️ Abdel War Zone</h1>
-        <div class="subtitle">Third-Person 2D Battle</div>
+        <div class="subtitle">2D Third-Person Battle</div>
 
         <input id="playerName" placeholder="Enter your name">
 
@@ -154,53 +168,95 @@ button:hover {
     </div>
 </div>
 
+
 <div id="hud">
-    <div id="playerInfo">Player</div>
-    ❤️ HP: <span id="hp">100</span><br>
-    🔫 Ammo: <span id="ammo">30</span><br>
-    ☠️ Kills: <span id="kills">0</span>
+
+    <div id="playerInfo">🇩🇪 Player</div>
+
+    ❤️ HP:
+    <span id="hp">200</span> / 200
+
+    <div class="healthBox">
+        <div id="healthBar"></div>
+    </div>
+
+    🔫 Ammo:
+    <span id="ammo">30</span>
+
+    <span id="reloadText"></span>
+
+    <br>
+
+    ☠️ Kills:
+    <span id="kills">0</span>
+
+    <br>
+
+    ⭐ Score:
+    <span id="score">0</span>
+
 </div>
 
+
 <div id="help">
-    WASD = Move &nbsp; | &nbsp; Mouse = Aim &nbsp; | &nbsp; Click = Shoot &nbsp; | &nbsp; R = Reload
+    WASD = Move | Mouse = Aim | Left Click = Shoot | R = Reload
 </div>
+
 
 <div id="crosshair"></div>
 
+
 <div id="gameOver">
+
     <div class="box">
+
         <h1>💀 GAME OVER</h1>
+
         <p id="finalScore"></p>
-        <button onclick="restartGame()">PLAY AGAIN</button>
-        <button onclick="backToMenu()">MENU</button>
+
+        <button onclick="restartGame()">
+            PLAY AGAIN
+        </button>
+
+        <button onclick="backToMenu()">
+            MENU
+        </button>
+
     </div>
+
 </div>
 
+
 <canvas id="game"></canvas>
+
 
 <script>
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-let W, H;
+let W;
+let H;
 
 function resize() {
+
     W = canvas.width = window.innerWidth;
     H = canvas.height = window.innerHeight;
+
 }
 
 window.addEventListener("resize", resize);
+
 resize();
 
 
-// ===============================
-// GAME VARIABLES
-// ===============================
+// ==========================
+// GAME
+// ==========================
 
 let running = false;
 
-let playerName = "";
+let playerName = "Abdel";
 let playerFlag = "🇩🇪";
 let difficulty = "easy";
 
@@ -209,98 +265,139 @@ let kills = 0;
 
 let keys = {};
 
-let mouse = {
-    x: W / 2,
-    y: H / 2,
-    down: false
-};
-
-let camera = {
-    x: 0,
-    y: 0
-};
-
-const world = {
-    width: 3000,
-    height: 2200
-};
-
 let bullets = [];
 let enemies = [];
 let obstacles = [];
 let particles = [];
 
 
-// ===============================
+// ==========================
+// CAMERA
+// ==========================
+
+const camera = {
+
+    x: 0,
+    y: 0
+
+};
+
+
+// ==========================
+// WORLD
+// ==========================
+
+const world = {
+
+    width: 3000,
+    height: 2200
+
+};
+
+
+// ==========================
 // PLAYER
-// ===============================
+// ==========================
 
 const player = {
+
     x: world.width / 2,
     y: world.height / 2,
 
-    speed: 3.5,
+    speed: 4,
 
-    hp: 100,
-    maxHp: 100,
+    hp: 200,
+    maxHp: 200,
 
     ammo: 30,
     maxAmmo: 30,
 
     reloadTime: 0,
+
     shootCooldown: 0,
 
     angle: 0
+
 };
 
 
-// ===============================
-// CONTROLS
-// ===============================
+// ==========================
+// MOUSE
+// ==========================
 
-window.addEventListener("keydown", e => {
+const mouse = {
+
+    x: W / 2,
+    y: H / 2,
+
+    down: false
+
+};
+
+
+// ==========================
+// KEYBOARD
+// ==========================
+
+window.addEventListener("keydown", function(e) {
 
     keys[e.key.toLowerCase()] = true;
 
     if (e.key.toLowerCase() === "r") {
+
         reload();
+
     }
+
 });
 
-window.addEventListener("keyup", e => {
+window.addEventListener("keyup", function(e) {
+
     keys[e.key.toLowerCase()] = false;
+
 });
 
-canvas.addEventListener("mousemove", e => {
+
+canvas.addEventListener("mousemove", function(e) {
 
     mouse.x = e.clientX;
     mouse.y = e.clientY;
 
-    document.getElementById("crosshair").style.left =
+    const crosshair =
+        document.getElementById("crosshair");
+
+    crosshair.style.left =
         mouse.x + "px";
 
-    document.getElementById("crosshair").style.top =
+    crosshair.style.top =
         mouse.y + "px";
+
 });
 
-canvas.addEventListener("mousedown", () => {
+
+canvas.addEventListener("mousedown", function() {
+
     mouse.down = true;
+
 });
 
-window.addEventListener("mouseup", () => {
+
+window.addEventListener("mouseup", function() {
+
     mouse.down = false;
+
 });
 
 
-// ===============================
-// START GAME
-// ===============================
+// ==========================
+// START
+// ==========================
 
 function startGame() {
 
     playerName =
-        document.getElementById("playerName").value.trim()
-        || "Abdel";
+        document.getElementById("playerName")
+        .value.trim() || "Abdel";
 
     playerFlag =
         document.getElementById("country").value;
@@ -311,11 +408,16 @@ function startGame() {
     score = 0;
     kills = 0;
 
-    player.hp = 100;
+    player.hp = 200;
     player.ammo = 30;
 
-    player.x = world.width / 2;
-    player.y = world.height / 2;
+    player.reloadTime = 0;
+
+    player.x =
+        world.width / 2;
+
+    player.y =
+        world.height / 2;
 
     bullets = [];
     enemies = [];
@@ -323,88 +425,137 @@ function startGame() {
     particles = [];
 
     createObstacles();
+
     createEnemies();
 
-    document.getElementById("playerInfo").innerText =
+    document.getElementById("playerInfo")
+        .innerText =
         playerFlag + " " + playerName;
 
-    document.getElementById("menu").style.display = "none";
-    document.getElementById("gameOver").style.display = "none";
+    document.getElementById("menu")
+        .style.display = "none";
+
+    document.getElementById("gameOver")
+        .style.display = "none";
 
     running = true;
 
     requestAnimationFrame(gameLoop);
+
 }
 
 
-// ===============================
+// ==========================
 // OBSTACLES
-// ===============================
+// ==========================
 
 function createObstacles() {
 
     for (let i = 0; i < 80; i++) {
 
-        let type = Math.random() < 0.6
+        const type =
+            Math.random() < .6
             ? "tree"
             : "rock";
 
-        let radius =
+        const radius =
             type === "tree"
-            ? 35
-            : 28;
+            ? 38
+            : 30;
 
-        let x, y;
+        let x;
+        let y;
 
         do {
 
-            x = 100 + Math.random() * (world.width - 200);
-            y = 100 + Math.random() * (world.height - 200);
+            x =
+                100 +
+                Math.random() *
+                (world.width - 200);
+
+            y =
+                100 +
+                Math.random() *
+                (world.height - 200);
 
         } while (
-            distance(x, y, player.x, player.y) < 300
+            distance(
+                x,
+                y,
+                player.x,
+                player.y
+            ) < 300
         );
 
         obstacles.push({
-            x,
-            y,
-            radius,
-            type
+
+            x: x,
+            y: y,
+
+            radius: radius,
+
+            type: type
+
         });
+
     }
+
 }
 
 
-// ===============================
+// ==========================
 // ENEMIES
-// ===============================
+// ==========================
 
 function createEnemies() {
 
     for (let i = 0; i < 10; i++) {
 
-        let x, y;
+        let x;
+        let y;
 
         do {
 
-            x = 100 + Math.random() * (world.width - 200);
-            y = 100 + Math.random() * (world.height - 200);
+            x =
+                100 +
+                Math.random() *
+                (world.width - 200);
+
+            y =
+                100 +
+                Math.random() *
+                (world.height - 200);
 
         } while (
-            distance(x, y, player.x, player.y) < 500 ||
-            insideObstacle(x, y, 30)
+
+            distance(
+                x,
+                y,
+                player.x,
+                player.y
+            ) < 500
+
+            ||
+
+            insideObstacle(
+                x,
+                y,
+                30
+            )
+
         );
 
         enemies.push({
 
-            x,
-            y,
+            x: x,
+            y: y,
 
             hp: 100,
+            maxHp: 100,
 
             speed:
                 difficulty === "hard"
-                ? 2.0
+                ? 2
                 : difficulty === "medium"
                 ? 1.5
                 : 1.1,
@@ -415,98 +566,171 @@ function createEnemies() {
                 Math.random() * 100,
 
             alive: true
+
         });
+
     }
+
 }
 
 
-// ===============================
+// ==========================
 // PLAYER MOVEMENT
-// ===============================
+// ==========================
 
 function updatePlayer() {
 
     let dx = 0;
     let dy = 0;
 
-    if (keys["w"] || keys["arrowup"])
+    if (
+        keys["w"] ||
+        keys["arrowup"]
+    )
         dy--;
 
-    if (keys["s"] || keys["arrowdown"])
+    if (
+        keys["s"] ||
+        keys["arrowdown"]
+    )
         dy++;
 
-    if (keys["a"] || keys["arrowleft"])
+    if (
+        keys["a"] ||
+        keys["arrowleft"]
+    )
         dx--;
 
-    if (keys["d"] || keys["arrowright"])
+    if (
+        keys["d"] ||
+        keys["arrowright"]
+    )
         dx++;
+
 
     if (dx !== 0 || dy !== 0) {
 
-        let length =
-            Math.sqrt(dx * dx + dy * dy);
+        const len =
+            Math.sqrt(
+                dx * dx +
+                dy * dy
+            );
 
-        dx /= length;
-        dy /= length;
+        dx /= len;
+        dy /= len;
 
-        let newX =
-            player.x + dx * player.speed;
 
-        let newY =
-            player.y + dy * player.speed;
+        const newX =
+            player.x +
+            dx * player.speed;
 
-        if (!insideObstacle(newX, player.y, 25))
+        const newY =
+            player.y +
+            dy * player.speed;
+
+
+        if (
+            !insideObstacle(
+                newX,
+                player.y,
+                24
+            )
+        ) {
+
             player.x = newX;
 
-        if (!insideObstacle(player.x, newY, 25))
+        }
+
+
+        if (
+            !insideObstacle(
+                player.x,
+                newY,
+                24
+            )
+        ) {
+
             player.y = newY;
+
+        }
+
     }
 
+
     player.x =
-        Math.max(30,
-        Math.min(world.width - 30, player.x));
+        Math.max(
+            30,
+            Math.min(
+                world.width - 30,
+                player.x
+            )
+        );
+
 
     player.y =
-        Math.max(30,
-        Math.min(world.height - 30, player.y));
+        Math.max(
+            30,
+            Math.min(
+                world.height - 30,
+                player.y
+            )
+        );
 
 
-    // Camera follows player
+    // CAMERA FOLLOWS PLAYER
 
     camera.x =
-        player.x - W / 2;
+        player.x -
+        W / 2;
 
     camera.y =
-        player.y - H / 2;
+        player.y -
+        H / 2;
+
 
     camera.x =
-        Math.max(0,
-        Math.min(world.width - W, camera.x));
+        Math.max(
+            0,
+            Math.min(
+                world.width - W,
+                camera.x
+            )
+        );
+
 
     camera.y =
-        Math.max(0,
-        Math.min(world.height - H, camera.y));
+        Math.max(
+            0,
+            Math.min(
+                world.height - H,
+                camera.y
+            )
+        );
 
 
-    // Aim
+    // AIM
 
-    let screenPlayerX =
-        player.x - camera.x;
+    const screenX =
+        player.x -
+        camera.x;
 
-    let screenPlayerY =
-        player.y - camera.y;
+    const screenY =
+        player.y -
+        camera.y;
+
 
     player.angle =
         Math.atan2(
-            mouse.y - screenPlayerY,
-            mouse.x - screenPlayerX
+            mouse.y - screenY,
+            mouse.x - screenX
         );
+
 }
 
 
-// ===============================
-// SHOOTING
-// ===============================
+// ==========================
+// SHOOT
+// ==========================
 
 function shoot() {
 
@@ -522,148 +746,218 @@ function shoot() {
     if (player.ammo <= 0) {
 
         reload();
+
         return;
+
     }
+
 
     player.ammo--;
 
-    player.shootCooldown = 10;
+    player.shootCooldown = 9;
 
-    let gunLength = 38;
+
+    const gunLength = 70;
+
 
     bullets.push({
 
         x:
             player.x +
-            Math.cos(player.angle) * gunLength,
+            Math.cos(player.angle) *
+            gunLength,
 
         y:
             player.y +
-            Math.sin(player.angle) * gunLength,
+            Math.sin(player.angle) *
+            gunLength,
 
         vx:
-            Math.cos(player.angle) * 10,
+            Math.cos(player.angle) *
+            11,
 
         vy:
-            Math.sin(player.angle) * 10,
+            Math.sin(player.angle) *
+            11,
 
         owner: "player",
 
         life: 100
+
     });
 
+
     muzzleFlash(
+
         player.x +
-        Math.cos(player.angle) * 42,
+        Math.cos(player.angle) *
+        65,
 
         player.y +
-        Math.sin(player.angle) * 42
+        Math.sin(player.angle) *
+        65
+
     );
+
 }
 
 
+// ==========================
+// RELOAD
+// ==========================
+
 function reload() {
 
-    if (player.ammo === player.maxAmmo)
+    if (
+        player.ammo ===
+        player.maxAmmo
+    )
         return;
 
     if (player.reloadTime > 0)
         return;
 
     player.reloadTime = 80;
+
 }
 
 
-// ===============================
+// ==========================
 // ENEMY AI
-// ===============================
+// ==========================
 
 function updateEnemies() {
 
-    for (let enemy of enemies) {
+    for (const enemy of enemies) {
 
         if (!enemy.alive)
             continue;
 
-        let dx =
-            player.x - enemy.x;
 
-        let dy =
-            player.y - enemy.y;
+        const dx =
+            player.x -
+            enemy.x;
 
-        let dist =
-            Math.sqrt(dx * dx + dy * dy);
+        const dy =
+            player.y -
+            enemy.y;
+
+        const dist =
+            Math.sqrt(
+                dx * dx +
+                dy * dy
+            );
+
 
         enemy.angle =
-            Math.atan2(dy, dx);
+            Math.atan2(
+                dy,
+                dx
+            );
+
 
         if (dist > 230) {
 
-            let nx = dx / dist;
-            let ny = dy / dist;
+            const nx =
+                dx / dist;
 
-            let newX =
-                enemy.x + nx * enemy.speed;
+            const ny =
+                dy / dist;
 
-            let newY =
-                enemy.y + ny * enemy.speed;
 
-            if (!insideObstacle(newX, enemy.y, 23))
+            const newX =
+                enemy.x +
+                nx * enemy.speed;
+
+            const newY =
+                enemy.y +
+                ny * enemy.speed;
+
+
+            if (
+                !insideObstacle(
+                    newX,
+                    enemy.y,
+                    23
+                )
+            )
                 enemy.x = newX;
 
-            if (!insideObstacle(enemy.x, newY, 23))
+
+            if (
+                !insideObstacle(
+                    enemy.x,
+                    newY,
+                    23
+                )
+            )
                 enemy.y = newY;
+
         }
+
 
         enemy.shootTimer--;
 
+
         if (
-            dist < 600 &&
+            dist < 650 &&
             enemy.shootTimer <= 0
         ) {
 
             enemyShoot(enemy);
 
+
             if (difficulty === "easy")
-                enemy.shootTimer = 100;
+                enemy.shootTimer = 110;
 
             if (difficulty === "medium")
-                enemy.shootTimer = 70;
+                enemy.shootTimer = 75;
 
             if (difficulty === "hard")
                 enemy.shootTimer = 45;
+
         }
+
     }
+
 }
 
+
+// ==========================
+// ENEMY SHOOT
+// ==========================
 
 function enemyShoot(enemy) {
 
     let accuracy;
 
     if (difficulty === "easy")
-        accuracy = 0.35;
+        accuracy = .30;
 
     if (difficulty === "medium")
-        accuracy = 0.65;
+        accuracy = .60;
 
     if (difficulty === "hard")
-        accuracy = 0.90;
+        accuracy = .88;
 
-    let angle =
+
+    const angle =
         enemy.angle +
-        (Math.random() - 0.5) *
+        (Math.random() - .5) *
         (1 - accuracy);
+
 
     bullets.push({
 
         x:
             enemy.x +
-            Math.cos(angle) * 35,
+            Math.cos(angle) *
+            55,
 
         y:
             enemy.y +
-            Math.sin(angle) * 35,
+            Math.sin(angle) *
+            55,
 
         vx:
             Math.cos(angle) * 7,
@@ -674,24 +968,32 @@ function enemyShoot(enemy) {
         owner: "enemy",
 
         life: 100
+
     });
+
 }
 
 
-// ===============================
+// ==========================
 // BULLETS
-// ===============================
+// ==========================
 
 function updateBullets() {
 
-    for (let i = bullets.length - 1; i >= 0; i--) {
+    for (
+        let i = bullets.length - 1;
+        i >= 0;
+        i--
+    ) {
 
-        let b = bullets[i];
+        const b = bullets[i];
+
 
         b.x += b.vx;
         b.y += b.vy;
 
         b.life--;
+
 
         if (
             b.life <= 0 ||
@@ -702,28 +1004,45 @@ function updateBullets() {
         ) {
 
             bullets.splice(i, 1);
+
             continue;
+
         }
 
-        // Bullet hits obstacle
 
-        if (insideObstacle(b.x, b.y, 4)) {
+        // HIT TREE / ROCK
 
-            createHitParticles(b.x, b.y);
+        if (
+            insideObstacle(
+                b.x,
+                b.y,
+                3
+            )
+        ) {
+
+            createHitParticles(
+                b.x,
+                b.y
+            );
 
             bullets.splice(i, 1);
+
             continue;
+
         }
 
 
-        // Player bullet
+        // PLAYER BULLET HITS ENEMY
 
         if (b.owner === "player") {
 
-            for (let enemy of enemies) {
+            for (const enemy of enemies) {
 
                 if (!enemy.alive)
                     continue;
+
+
+                // BODY HIT
 
                 if (
                     distance(
@@ -731,38 +1050,83 @@ function updateBullets() {
                         b.y,
                         enemy.x,
                         enemy.y
-                    ) < 25
+                    ) < 27
                 ) {
 
-                    enemy.hp -= 50;
+                    let damage = 20;
 
-                    createHitParticles(
-                        enemy.x,
-                        enemy.y
+
+                    // HEAD HIT
+
+                    const headDistance =
+                        distance(
+                            b.x,
+                            b.y,
+                            enemy.x,
+                            enemy.y - 38
+                        );
+
+
+                    if (
+                        headDistance < 17
+                    ) {
+
+                        damage = 50;
+
+                        createHitParticles(
+                            enemy.x,
+                            enemy.y - 38
+                        );
+
+                    } else {
+
+                        createHitParticles(
+                            enemy.x,
+                            enemy.y
+                        );
+
+                    }
+
+
+                    enemy.hp -= damage;
+
+
+                    bullets.splice(
+                        i,
+                        1
                     );
 
-                    bullets.splice(i, 1);
 
-                    if (enemy.hp <= 0) {
+                    if (
+                        enemy.hp <= 0
+                    ) {
+
+                        enemy.hp = 0;
 
                         enemy.alive = false;
 
                         kills++;
+
                         score += 100;
 
                         explosion(
                             enemy.x,
                             enemy.y
                         );
+
                     }
 
+
                     break;
+
                 }
+
             }
+
         }
 
 
-        // Enemy bullet
+        // ENEMY BULLET HITS PLAYER
 
         if (b.owner === "enemy") {
 
@@ -772,34 +1136,56 @@ function updateBullets() {
                     b.y,
                     player.x,
                     player.y
-                ) < 24
+                ) < 28
             ) {
 
                 player.hp -= 10;
+
 
                 createHitParticles(
                     player.x,
                     player.y
                 );
 
-                bullets.splice(i, 1);
 
-                if (player.hp <= 0) {
+                bullets.splice(
+                    i,
+                    1
+                );
+
+
+                if (
+                    player.hp <= 0
+                ) {
+
+                    player.hp = 0;
+
                     endGame();
+
                 }
+
             }
+
         }
+
     }
+
 }
 
 
-// ===============================
+// ==========================
 // COLLISION
-// ===============================
+// ==========================
 
-function insideObstacle(x, y, extra = 0) {
+function insideObstacle(
+    x,
+    y,
+    extra = 0
+) {
 
-    for (let o of obstacles) {
+    for (
+        const o of obstacles
+    ) {
 
         if (
             distance(
@@ -807,45 +1193,73 @@ function insideObstacle(x, y, extra = 0) {
                 y,
                 o.x,
                 o.y
-            ) < o.radius + extra
+            )
+            <
+            o.radius + extra
         ) {
 
             return true;
+
         }
+
     }
 
     return false;
+
 }
 
 
-function distance(x1, y1, x2, y2) {
+function distance(
+    x1,
+    y1,
+    x2,
+    y2
+) {
 
-    let dx = x1 - x2;
-    let dy = y1 - y2;
+    const dx =
+        x1 - x2;
 
-    return Math.sqrt(dx * dx + dy * dy);
+    const dy =
+        y1 - y2;
+
+    return Math.sqrt(
+        dx * dx +
+        dy * dy
+    );
+
 }
 
 
-// ===============================
-// DRAW WORLD
-// ===============================
+// ==========================
+// WORLD
+// ==========================
 
 function drawWorld() {
 
-    ctx.fillStyle = "#66734d";
-    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle =
+        "#71815a";
+
+    ctx.fillRect(
+        0,
+        0,
+        W,
+        H
+    );
+
 
     ctx.save();
+
 
     ctx.translate(
         -camera.x,
         -camera.y
     );
 
-    // Ground
 
-    ctx.fillStyle = "#71815a";
+    // GROUND
+
+    ctx.fillStyle =
+        "#71815a";
 
     ctx.fillRect(
         0,
@@ -855,55 +1269,69 @@ function drawWorld() {
     );
 
 
-    // Grass details
+    // GRASS
 
     ctx.strokeStyle =
-        "rgba(30,60,20,.15)";
+        "rgba(30,60,20,.18)";
+
 
     for (
         let x = 0;
         x < world.width;
-        x += 80
+        x += 70
     ) {
 
         for (
             let y = 0;
             y < world.height;
-            y += 80
+            y += 70
         ) {
 
             ctx.beginPath();
 
-            ctx.moveTo(x, y);
-            ctx.lineTo(x + 5, y - 8);
+            ctx.moveTo(
+                x,
+                y
+            );
+
+            ctx.lineTo(
+                x + 5,
+                y - 8
+            );
 
             ctx.stroke();
+
         }
+
     }
 
 
-    // Obstacles
+    for (
+        const o of obstacles
+    ) {
 
-    for (let o of obstacles) {
-
-        if (o.type === "tree")
+        if (
+            o.type === "tree"
+        )
             drawTree(o);
-
         else
             drawRock(o);
+
     }
 
+
     ctx.restore();
+
 }
 
 
-// ===============================
+// ==========================
 // TREE
-// ===============================
+// ==========================
 
 function drawTree(o) {
 
-    // Shadow
+    // SHADOW
 
     ctx.fillStyle =
         "rgba(0,0,0,.25)";
@@ -912,8 +1340,8 @@ function drawTree(o) {
 
     ctx.ellipse(
         o.x,
-        o.y + 18,
-        45,
+        o.y + 20,
+        48,
         18,
         0,
         0,
@@ -923,39 +1351,74 @@ function drawTree(o) {
     ctx.fill();
 
 
-    // Trunk
+    // TRUNK
 
-    ctx.fillStyle = "#60452d";
+    ctx.fillStyle =
+        "#60452d";
 
     ctx.fillRect(
-        o.x - 9,
-        o.y - 10,
-        18,
+        o.x - 10,
+        o.y - 5,
+        20,
         45
     );
 
 
-    // Leaves
+    // TREE
 
-    ctx.fillStyle = "#274d25";
-
-    ctx.beginPath();
-    ctx.arc(o.x, o.y - 15, 30, 0, Math.PI * 2);
-    ctx.arc(o.x - 20, o.y, 25, 0, Math.PI * 2);
-    ctx.arc(o.x + 20, o.y, 25, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = "#3e7133";
+    ctx.fillStyle =
+        "#254a25";
 
     ctx.beginPath();
-    ctx.arc(o.x, o.y - 25, 20, 0, Math.PI * 2);
+
+    ctx.arc(
+        o.x,
+        o.y - 20,
+        32,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.arc(
+        o.x - 22,
+        o.y,
+        27,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.arc(
+        o.x + 22,
+        o.y,
+        27,
+        0,
+        Math.PI * 2
+    );
+
     ctx.fill();
+
+
+    ctx.fillStyle =
+        "#477b38";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        o.x - 5,
+        o.y - 30,
+        20,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
 }
 
 
-// ===============================
+// ==========================
 // ROCK
-// ===============================
+// ==========================
 
 function drawRock(o) {
 
@@ -967,8 +1430,8 @@ function drawRock(o) {
     ctx.ellipse(
         o.x,
         o.y + 10,
-        32,
-        14,
+        34,
+        15,
         0,
         0,
         Math.PI * 2
@@ -977,67 +1440,118 @@ function drawRock(o) {
     ctx.fill();
 
 
-    ctx.fillStyle = "#66645b";
+    ctx.fillStyle =
+        "#64635c";
 
     ctx.beginPath();
 
-    ctx.moveTo(o.x - 25, o.y + 8);
-    ctx.lineTo(o.x - 30, o.y - 8);
-    ctx.lineTo(o.x - 12, o.y - 25);
-    ctx.lineTo(o.x + 12, o.y - 23);
-    ctx.lineTo(o.x + 30, o.y - 5);
-    ctx.lineTo(o.x + 20, o.y + 15);
-    ctx.lineTo(o.x - 10, o.y + 20);
+    ctx.moveTo(
+        o.x - 27,
+        o.y + 8
+    );
+
+    ctx.lineTo(
+        o.x - 31,
+        o.y - 8
+    );
+
+    ctx.lineTo(
+        o.x - 13,
+        o.y - 25
+    );
+
+    ctx.lineTo(
+        o.x + 12,
+        o.y - 23
+    );
+
+    ctx.lineTo(
+        o.x + 30,
+        o.y - 5
+    );
+
+    ctx.lineTo(
+        o.x + 20,
+        o.y + 15
+    );
+
+    ctx.lineTo(
+        o.x - 10,
+        o.y + 20
+    );
 
     ctx.closePath();
+
     ctx.fill();
 
 
-    ctx.fillStyle = "#858278";
+    ctx.fillStyle =
+        "#858278";
 
     ctx.beginPath();
 
-    ctx.moveTo(o.x - 12, o.y - 22);
-    ctx.lineTo(o.x + 12, o.y - 20);
-    ctx.lineTo(o.x + 5, o.y - 5);
-    ctx.lineTo(o.x - 15, o.y - 8);
+    ctx.moveTo(
+        o.x - 12,
+        o.y - 22
+    );
+
+    ctx.lineTo(
+        o.x + 12,
+        o.y - 20
+    );
+
+    ctx.lineTo(
+        o.x + 5,
+        o.y - 5
+    );
+
+    ctx.lineTo(
+        o.x - 15,
+        o.y - 8
+    );
 
     ctx.closePath();
 
     ctx.fill();
+
 }
 
 
-// ===============================
-// DRAW PLAYER
-// ===============================
+// ==========================
+// PLAYER
+// ==========================
 
 function drawPlayer() {
 
-    let x = player.x;
-    let y = player.y;
+    const x = player.x;
+    const y = player.y;
+
 
     ctx.save();
 
-    ctx.translate(x, y);
+    ctx.translate(
+        x,
+        y
+    );
 
-    // Aim direction
 
-    ctx.rotate(player.angle);
+    ctx.rotate(
+        player.angle
+    );
 
 
-    // Shadow
+    // SHADOW
 
     ctx.fillStyle =
-        "rgba(0,0,0,.3)";
+        "rgba(0,0,0,.35)";
 
     ctx.beginPath();
 
     ctx.ellipse(
         0,
-        18,
-        28,
-        13,
+        20,
+        30,
+        14,
         0,
         0,
         Math.PI * 2
@@ -1046,132 +1560,172 @@ function drawPlayer() {
     ctx.fill();
 
 
-    // Legs
+    // LEGS
 
-    ctx.fillStyle = "#263126";
+    ctx.fillStyle =
+        "#263126";
 
     ctx.fillRect(
         -16,
-        5,
+        4,
         12,
-        28
+        30
     );
 
     ctx.fillRect(
         4,
-        5,
+        4,
         12,
-        28
+        30
     );
 
 
-    // Boots
+    // BOOTS
 
-    ctx.fillStyle = "#171717";
+    ctx.fillStyle =
+        "#151515";
 
     ctx.fillRect(
-        -18,
+        -19,
         28,
-        15,
-        8
+        16,
+        9
     );
 
     ctx.fillRect(
         3,
         28,
-        15,
-        8
+        16,
+        9
     );
 
 
-    // Body / tactical vest
+    // BODY
 
-    ctx.fillStyle = "#334331";
+    ctx.fillStyle =
+        "#344632";
 
     ctx.fillRect(
         -22,
         -18,
         44,
-        35
+        36
     );
 
 
-    // Vest plates
+    // VEST
 
-    ctx.fillStyle = "#4c5b46";
+    ctx.fillStyle =
+        "#52614a";
 
     ctx.fillRect(
         -16,
-        -10,
+        -11,
         32,
-        7
+        8
     );
 
     ctx.fillRect(
         -16,
-        2,
+        1,
         32,
-        7
+        8
     );
 
 
-    // Left arm
+    // ARMS
 
-    ctx.strokeStyle = "#394837";
+    ctx.strokeStyle =
+        "#394837";
+
     ctx.lineWidth = 12;
 
+
     ctx.beginPath();
 
-    ctx.moveTo(-18, -8);
-    ctx.lineTo(-35, 5);
+    ctx.moveTo(
+        -18,
+        -8
+    );
+
+    ctx.lineTo(
+        -35,
+        4
+    );
 
     ctx.stroke();
 
 
-    // Right arm
-
     ctx.beginPath();
 
-    ctx.moveTo(18, -8);
-    ctx.lineTo(35, 5);
+    ctx.moveTo(
+        18,
+        -8
+    );
+
+    ctx.lineTo(
+        35,
+        4
+    );
 
     ctx.stroke();
 
 
-    // Hands
+    // HANDS
 
-    ctx.fillStyle = "#c58d68";
+    ctx.fillStyle =
+        "#c58d68";
+
 
     ctx.beginPath();
-    ctx.arc(-36, 6, 7, 0, Math.PI * 2);
+
+    ctx.arc(
+        -36,
+        5,
+        7,
+        0,
+        Math.PI * 2
+    );
+
     ctx.fill();
+
 
     ctx.beginPath();
-    ctx.arc(36, 6, 7, 0, Math.PI * 2);
+
+    ctx.arc(
+        36,
+        5,
+        7,
+        0,
+        Math.PI * 2
+    );
+
     ctx.fill();
 
 
-    // Neck
+    // NECK
 
-    ctx.fillStyle = "#bd805d";
+    ctx.fillStyle =
+        "#bd805d";
 
     ctx.fillRect(
         -7,
-        -25,
+        -27,
         14,
         10
     );
 
 
-    // Head
+    // HEAD / FACE
 
-    ctx.fillStyle = "#c58d68";
+    ctx.fillStyle =
+        "#c58d68";
 
     ctx.beginPath();
 
     ctx.arc(
         0,
-        -38,
+        -39,
         17,
         0,
         Math.PI * 2
@@ -1180,32 +1734,34 @@ function drawPlayer() {
     ctx.fill();
 
 
-    // Hair
+    // HAIR
 
-    ctx.fillStyle = "#29231d";
+    ctx.fillStyle =
+        "#29231d";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        0,
+        -45,
+        15,
+        Math.PI,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    // HELMET
+
+    ctx.fillStyle =
+        "#46583d";
 
     ctx.beginPath();
 
     ctx.arc(
         0,
         -44,
-        15,
-        Math.PI,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-
-    // Helmet
-
-    ctx.fillStyle = "#46583d";
-
-    ctx.beginPath();
-
-    ctx.arc(
-        0,
-        -43,
         19,
         Math.PI,
         Math.PI * 2
@@ -1214,74 +1770,86 @@ function drawPlayer() {
     ctx.fill();
 
 
-    // Gun
+    // GUN
 
-    ctx.fillStyle = "#202020";
+    ctx.fillStyle =
+        "#202020";
 
     ctx.fillRect(
         12,
-        -2,
-        55,
-        7
+        -3,
+        58,
+        8
     );
 
-    ctx.fillStyle = "#111";
+
+    ctx.fillStyle =
+        "#111";
 
     ctx.fillRect(
-        55,
-        -4,
+        65,
+        -5,
         18,
-        4
-    );
-
-
-    // Gun sight
-
-    ctx.fillStyle = "#777";
-
-    ctx.fillRect(
-        30,
-        -6,
-        5,
         5
     );
 
 
+    // MUZZLE
+
+    ctx.fillStyle =
+        "#333";
+
+    ctx.fillRect(
+        81,
+        -4,
+        5,
+        7
+    );
+
+
     ctx.restore();
+
 }
 
 
-// ===============================
-// DRAW ENEMY
-// ===============================
+// ==========================
+// ENEMY
+// ==========================
 
 function drawEnemy(enemy) {
 
     if (!enemy.alive)
         return;
 
-    let x = enemy.x;
-    let y = enemy.y;
+
+    const x = enemy.x;
+    const y = enemy.y;
+
 
     ctx.save();
 
-    ctx.translate(x, y);
+    ctx.translate(
+        x,
+        y
+    );
 
-    ctx.rotate(enemy.angle);
+    ctx.rotate(
+        enemy.angle
+    );
 
 
-    // Shadow
+    // SHADOW
 
     ctx.fillStyle =
-        "rgba(0,0,0,.3)";
+        "rgba(0,0,0,.35)";
 
     ctx.beginPath();
 
     ctx.ellipse(
         0,
-        18,
-        28,
-        13,
+        20,
+        30,
+        14,
         0,
         0,
         Math.PI * 2
@@ -1290,79 +1858,119 @@ function drawEnemy(enemy) {
     ctx.fill();
 
 
-    // Legs
+    // LEGS
 
-    ctx.fillStyle = "#292b30";
+    ctx.fillStyle =
+        "#292b30";
 
     ctx.fillRect(
         -16,
-        5,
+        4,
         12,
-        28
+        30
     );
 
     ctx.fillRect(
         4,
-        5,
+        4,
         12,
-        28
+        30
     );
 
 
-    // Body
+    // BODY
 
-    ctx.fillStyle = "#454b55";
+    ctx.fillStyle =
+        "#454b55";
 
     ctx.fillRect(
         -22,
         -18,
         44,
-        35
+        36
     );
 
 
-    // Arms
+    // ARMS
 
-    ctx.strokeStyle = "#505762";
+    ctx.strokeStyle =
+        "#505762";
+
     ctx.lineWidth = 12;
 
+
     ctx.beginPath();
 
-    ctx.moveTo(-18, -8);
-    ctx.lineTo(-35, 5);
+    ctx.moveTo(
+        -18,
+        -8
+    );
+
+    ctx.lineTo(
+        -35,
+        4
+    );
 
     ctx.stroke();
 
+
     ctx.beginPath();
 
-    ctx.moveTo(18, -8);
-    ctx.lineTo(35, 5);
+    ctx.moveTo(
+        18,
+        -8
+    );
+
+    ctx.lineTo(
+        35,
+        4
+    );
 
     ctx.stroke();
 
 
-    // Hands
+    // HANDS
 
-    ctx.fillStyle = "#b87958";
+    ctx.fillStyle =
+        "#b87958";
+
 
     ctx.beginPath();
-    ctx.arc(-36, 6, 7, 0, Math.PI * 2);
+
+    ctx.arc(
+        -36,
+        5,
+        7,
+        0,
+        Math.PI * 2
+    );
+
     ctx.fill();
+
 
     ctx.beginPath();
-    ctx.arc(36, 6, 7, 0, Math.PI * 2);
+
+    ctx.arc(
+        36,
+        5,
+        7,
+        0,
+        Math.PI * 2
+    );
+
     ctx.fill();
 
 
-    // Head
+    // HEAD
 
-    ctx.fillStyle = "#b87958";
+    ctx.fillStyle =
+        "#b87958";
 
     ctx.beginPath();
 
     ctx.arc(
         0,
-        -38,
+        -39,
         17,
         0,
         Math.PI * 2
@@ -1371,15 +1979,16 @@ function drawEnemy(enemy) {
     ctx.fill();
 
 
-    // Helmet
+    // HELMET
 
-    ctx.fillStyle = "#5b3030";
+    ctx.fillStyle =
+        "#673636";
 
     ctx.beginPath();
 
     ctx.arc(
         0,
-        -43,
+        -44,
         19,
         Math.PI,
         Math.PI * 2
@@ -1388,58 +1997,105 @@ function drawEnemy(enemy) {
     ctx.fill();
 
 
-    // Gun
+    // GUN
 
-    ctx.fillStyle = "#181818";
+    ctx.fillStyle =
+        "#181818";
 
     ctx.fillRect(
         12,
-        -2,
-        55,
+        -3,
+        58,
+        8
+    );
+
+
+    ctx.fillRect(
+        65,
+        -5,
+        18,
+        5
+    );
+
+
+    ctx.restore();
+
+
+    // ======================
+    // ENEMY HP BAR
+    // ======================
+
+    const barWidth = 55;
+
+    const screenX =
+        enemy.x -
+        camera.x;
+
+    const screenY =
+        enemy.y -
+        camera.y;
+
+
+    ctx.fillStyle =
+        "#222";
+
+    ctx.fillRect(
+        screenX -
+        barWidth / 2,
+
+        screenY - 78,
+
+        barWidth,
         7
     );
 
+
+    ctx.fillStyle =
+        "#e33";
+
     ctx.fillRect(
-        55,
-        -4,
-        18,
-        4
+        screenX -
+        barWidth / 2,
+
+        screenY - 78,
+
+        barWidth *
+        (enemy.hp /
+        enemy.maxHp),
+
+        7
     );
 
 
-    // Health bar
+    // NAME
 
-    ctx.rotate(-enemy.angle);
+    ctx.fillStyle =
+        "white";
 
-    ctx.fillStyle = "#222";
+    ctx.font =
+        "12px Arial";
 
-    ctx.fillRect(
-        -25,
-        -70,
-        50,
-        6
+    ctx.textAlign =
+        "center";
+
+    ctx.fillText(
+        "BOT",
+        screenX,
+        screenY - 85
     );
 
-    ctx.fillStyle = "#e33";
-
-    ctx.fillRect(
-        -25,
-        -70,
-        50 * (enemy.hp / 100),
-        6
-    );
-
-    ctx.restore();
 }
 
 
-// ===============================
-// DRAW BULLETS
-// ===============================
+// ==========================
+// BULLETS
+// ==========================
 
 function drawBullets() {
 
-    for (let b of bullets) {
+    for (
+        const b of bullets
+    ) {
 
         ctx.save();
 
@@ -1448,10 +2104,12 @@ function drawBullets() {
             b.y - camera.y
         );
 
+
         ctx.fillStyle =
             b.owner === "player"
             ? "#ffe86b"
             : "#ff5555";
+
 
         ctx.beginPath();
 
@@ -1465,75 +2123,114 @@ function drawBullets() {
 
         ctx.fill();
 
+
         ctx.restore();
+
     }
+
 }
 
 
-// ===============================
+// ==========================
 // PARTICLES
-// ===============================
+// ==========================
 
-function createHitParticles(x, y) {
+function createHitParticles(
+    x,
+    y
+) {
 
-    for (let i = 0; i < 8; i++) {
+    for (
+        let i = 0;
+        i < 8;
+        i++
+    ) {
 
         particles.push({
 
-            x,
-            y,
+            x: x,
+            y: y,
 
             vx:
-                (Math.random() - .5) * 5,
+                (Math.random() - .5)
+                * 5,
 
             vy:
-                (Math.random() - .5) * 5,
+                (Math.random() - .5)
+                * 5,
 
             life: 25
+
         });
+
     }
+
 }
 
 
-function explosion(x, y) {
+function explosion(
+    x,
+    y
+) {
 
-    for (let i = 0; i < 30; i++) {
+    for (
+        let i = 0;
+        i < 30;
+        i++
+    ) {
 
         particles.push({
 
-            x,
-            y,
+            x: x,
+            y: y,
 
             vx:
-                (Math.random() - .5) * 8,
+                (Math.random() - .5)
+                * 8,
 
             vy:
-                (Math.random() - .5) * 8,
+                (Math.random() - .5)
+                * 8,
 
             life: 50
+
         });
+
     }
+
 }
 
 
-function muzzleFlash(x, y) {
+function muzzleFlash(
+    x,
+    y
+) {
 
-    for (let i = 0; i < 5; i++) {
+    for (
+        let i = 0;
+        i < 5;
+        i++
+    ) {
 
         particles.push({
 
-            x,
-            y,
+            x: x,
+            y: y,
 
             vx:
-                (Math.random() - .5) * 3,
+                (Math.random() - .5)
+                * 3,
 
             vy:
-                (Math.random() - .5) * 3,
+                (Math.random() - .5)
+                * 3,
 
             life: 12
+
         });
+
     }
+
 }
 
 
@@ -1545,25 +2242,41 @@ function updateParticles() {
         i--
     ) {
 
-        let p = particles[i];
+        const p =
+            particles[i];
+
 
         p.x += p.vx;
         p.y += p.vy;
 
         p.life--;
 
-        if (p.life <= 0)
-            particles.splice(i, 1);
+
+        if (
+            p.life <= 0
+        ) {
+
+            particles.splice(
+                i,
+                1
+            );
+
+        }
+
     }
+
 }
 
 
 function drawParticles() {
 
-    for (let p of particles) {
+    for (
+        const p of particles
+    ) {
 
         ctx.fillStyle =
-            "rgba(255,220,100,.8)";
+            "rgba(255,220,100,.85)";
+
 
         ctx.beginPath();
 
@@ -1576,55 +2289,116 @@ function drawParticles() {
         );
 
         ctx.fill();
+
     }
+
 }
 
 
-// ===============================
+// ==========================
 // HUD
-// ===============================
+// ==========================
 
 function updateHUD() {
 
-    document.getElementById("hp").innerText =
-        Math.max(0, Math.floor(player.hp));
+    document.getElementById("hp")
+        .innerText =
+        Math.max(
+            0,
+            Math.floor(player.hp)
+        );
 
-    document.getElementById("ammo").innerText =
+
+    document.getElementById("ammo")
+        .innerText =
         player.reloadTime > 0
-        ? "RELOADING..."
+        ? "..."
         : player.ammo;
 
-    document.getElementById("kills").innerText =
+
+    document.getElementById("kills")
+        .innerText =
         kills;
+
+
+    document.getElementById("score")
+        .innerText =
+        score;
+
+
+    const percentage =
+        (player.hp /
+        player.maxHp) *
+        100;
+
+
+    document.getElementById(
+        "healthBar"
+    ).style.width =
+        percentage + "%";
+
+
+    if (
+        player.reloadTime > 0
+    ) {
+
+        document.getElementById(
+            "reloadText"
+        ).innerText =
+            " 🔄 Reloading";
+
+    } else {
+
+        document.getElementById(
+            "reloadText"
+        ).innerText =
+            "";
+
+    }
+
 }
 
 
-// ===============================
+// ==========================
 // GAME OVER
-// ===============================
+// ==========================
 
 function endGame() {
 
     if (!running)
         return;
 
+
     running = false;
 
-    document.getElementById("finalScore").innerText =
-        "Kills: " + kills +
-        " | Score: " + score;
 
-    document.getElementById("gameOver").style.display =
+    document.getElementById(
+        "finalScore"
+    ).innerText =
+        "Kills: " +
+        kills +
+        " | Score: " +
+        score;
+
+
+    document.getElementById(
+        "gameOver"
+    ).style.display =
         "flex";
+
 }
 
 
 function restartGame() {
 
-    document.getElementById("gameOver").style.display =
+    document.getElementById(
+        "gameOver"
+    ).style.display =
         "none";
 
+
     startGame();
+
 }
 
 
@@ -1632,58 +2406,95 @@ function backToMenu() {
 
     running = false;
 
-    document.getElementById("gameOver").style.display =
+
+    document.getElementById(
+        "gameOver"
+    ).style.display =
         "none";
 
-    document.getElementById("menu").style.display =
+
+    document.getElementById(
+        "menu"
+    ).style.display =
         "flex";
+
 }
 
 
-// ===============================
-// MAIN LOOP
-// ===============================
+// ==========================
+// GAME LOOP
+// ==========================
 
 function gameLoop() {
 
     if (!running)
         return;
 
+
     updatePlayer();
+
 
     if (mouse.down)
         shoot();
 
-    if (player.shootCooldown > 0)
+
+    if (
+        player.shootCooldown > 0
+    )
         player.shootCooldown--;
 
-    if (player.reloadTime > 0) {
+
+    if (
+        player.reloadTime > 0
+    ) {
 
         player.reloadTime--;
 
-        if (player.reloadTime === 0)
-            player.ammo = player.maxAmmo;
+
+        if (
+            player.reloadTime === 0
+        ) {
+
+            player.ammo =
+                player.maxAmmo;
+
+        }
+
     }
 
+
     updateEnemies();
+
     updateBullets();
+
     updateParticles();
+
 
     drawWorld();
 
-    // Draw enemies
 
-    for (let enemy of enemies)
+    for (
+        const enemy of enemies
+    ) {
+
         drawEnemy(enemy);
 
+    }
+
+
     drawBullets();
+
     drawParticles();
 
     drawPlayer();
 
     updateHUD();
 
-    requestAnimationFrame(gameLoop);
+
+    requestAnimationFrame(
+        gameLoop
+    );
+
 }
 
 </script>
