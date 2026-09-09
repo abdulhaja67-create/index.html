@@ -1,1 +1,1282 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>War Zone - Battle Arena</title>
 
+<style>
+* {
+    box-sizing: border-box;
+    user-select: none;
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    background: #111;
+    font-family: Arial, sans-serif;
+    color: white;
+}
+
+canvas {
+    display: block;
+}
+
+#menu {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background:
+        linear-gradient(rgba(0,0,0,.65),rgba(0,0,0,.8)),
+        radial-gradient(circle at center,#31452c,#080b08);
+}
+
+.panel {
+    width: 430px;
+    padding: 35px;
+    background: rgba(15,20,15,.94);
+    border: 1px solid #71835d;
+    border-radius: 18px;
+    box-shadow: 0 0 40px #000;
+    text-align: center;
+}
+
+h1 {
+    margin-top: 0;
+    font-size: 42px;
+    letter-spacing: 4px;
+}
+
+.subtitle {
+    color: #aaa;
+    margin-bottom: 25px;
+}
+
+input, select, button {
+    width: 100%;
+    padding: 14px;
+    margin: 8px 0;
+    border-radius: 8px;
+    border: none;
+    font-size: 16px;
+}
+
+input, select {
+    background: #252b25;
+    color: white;
+}
+
+button {
+    background: #738f4e;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #8eac61;
+}
+
+#hud {
+    display: none;
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+}
+
+#top {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.box {
+    background: rgba(0,0,0,.55);
+    padding: 10px 15px;
+    border-radius: 8px;
+}
+
+#healthBar {
+    width: 220px;
+    height: 18px;
+    background: #333;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+#health {
+    width: 100%;
+    height: 100%;
+    background: #55b947;
+}
+
+#weapon {
+    position: absolute;
+    right: 25px;
+    bottom: 25px;
+    text-align: right;
+}
+
+#ammo {
+    font-size: 34px;
+    font-weight: bold;
+}
+
+#crosshair {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%,-50%);
+    font-size: 25px;
+}
+
+#message {
+    position: absolute;
+    left: 50%;
+    top: 25%;
+    transform: translateX(-50%);
+    font-size: 25px;
+    font-weight: bold;
+    text-shadow: 0 2px 5px black;
+}
+
+#miniMap {
+    position: absolute;
+    right: 20px;
+    top: 80px;
+    width: 150px;
+    height: 150px;
+    border: 2px solid white;
+    background: rgba(20,30,20,.75);
+}
+
+#damage {
+    position: fixed;
+    inset: 0;
+    background: rgba(255,0,0,0);
+    pointer-events: none;
+    z-index: 9;
+    transition: background .1s;
+}
+
+#gameOver {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: rgba(0,0,0,.85);
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+#gameOver h2 {
+    font-size: 55px;
+}
+
+#score {
+    font-size: 25px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="menu">
+    <div class="panel">
+        <h1>WAR ZONE</h1>
+        <div class="subtitle">BATTLE ARENA</div>
+
+        <input id="playerName"
+               placeholder="اكتب اسمك"
+               maxlength="16">
+
+        <select id="country">
+            <option value="🇩🇪">🇩🇪 Germany</option>
+            <option value="🇸🇾">🇸🇾 Syria</option>
+            <option value="🇸🇦">🇸🇦 Saudi Arabia</option>
+            <option value="🇹🇷">🇹🇷 Türkiye</option>
+            <option value="🇫🇷">🇫🇷 France</option>
+            <option value="🇬🇧">🇬🇧 United Kingdom</option>
+            <option value="🇺🇸">🇺🇸 USA</option>
+            <option value="🇮🇹">🇮🇹 Italy</option>
+            <option value="🇪🇸">🇪🇸 Spain</option>
+            <option value="🇯🇵">🇯🇵 Japan</option>
+        </select>
+
+        <select id="difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+        </select>
+
+        <select id="bots">
+            <option value="5">5 Bots</option>
+            <option value="8" selected>8 Bots</option>
+            <option value="12">12 Bots</option>
+            <option value="16">16 Bots</option>
+        </select>
+
+        <button onclick="startGame()">START BATTLE</button>
+
+        <p style="color:#999;font-size:13px">
+            WASD = Move | Mouse = Look | Left Click = Fire
+            <br>
+            R = Reload | Shift = Sprint
+        </p>
+    </div>
+</div>
+
+<div id="hud">
+
+    <div id="top">
+
+        <div class="box">
+            <div id="playerInfo">🇩🇪 Player</div>
+            <div id="healthBar">
+                <div id="health"></div>
+            </div>
+            <div>❤️ <span id="healthText">100</span></div>
+        </div>
+
+        <div class="box">
+            🏆 Score: <span id="scoreText">0</span>
+            &nbsp;&nbsp;
+            🤖 Bots: <span id="botsText">0</span>
+        </div>
+
+    </div>
+
+    <canvas id="miniMap"></canvas>
+
+    <div id="crosshair">+</div>
+
+    <div id="message"></div>
+
+    <div id="weapon">
+        <div>ASSAULT BLASTER</div>
+        <div id="ammo">30 / 120</div>
+        <div>Press R to reload</div>
+    </div>
+</div>
+
+<div id="damage"></div>
+
+<div id="gameOver">
+    <div>
+        <h2 id="endTitle">GAME OVER</h2>
+        <div id="score">Score: 0</div>
+        <button onclick="location.reload()">PLAY AGAIN</button>
+    </div>
+</div>
+
+<script type="module">
+
+import * as THREE from
+"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+
+import { PointerLockControls } from
+"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/PointerLockControls.js";
+
+let scene, camera, renderer, controls;
+
+let playerName = "";
+let countryFlag = "";
+let difficulty = "medium";
+
+let health = 100;
+let score = 0;
+
+let ammo = 30;
+let reserveAmmo = 120;
+
+let bots = [];
+let keys = {};
+
+let shooting = false;
+let reloading = false;
+
+const WORLD_SIZE = 180;
+
+const menu = document.getElementById("menu");
+const hud = document.getElementById("hud");
+
+const healthBar = document.getElementById("health");
+const healthText = document.getElementById("healthText");
+const ammoText = document.getElementById("ammo");
+const scoreText = document.getElementById("scoreText");
+const botsText = document.getElementById("botsText");
+const message = document.getElementById("message");
+
+
+// ===============================
+// START GAME
+// ===============================
+
+window.startGame = function() {
+
+    playerName =
+        document.getElementById("playerName").value.trim()
+        || "Soldier";
+
+    countryFlag =
+        document.getElementById("country").value;
+
+    difficulty =
+        document.getElementById("difficulty").value;
+
+    const botCount =
+        Number(document.getElementById("bots").value);
+
+    menu.style.display = "none";
+    hud.style.display = "block";
+
+    document.getElementById("playerInfo").textContent =
+        countryFlag + " " + playerName;
+
+    init();
+
+    for(let i=0;i<botCount;i++) {
+        createBot(i);
+    }
+
+    controls.lock();
+
+    animate();
+};
+
+
+// ===============================
+// THREE.JS SETUP
+// ===============================
+
+function init() {
+
+    scene = new THREE.Scene();
+
+    scene.background =
+        new THREE.Color(0x87a68a);
+
+    scene.fog =
+        new THREE.Fog(0x87a68a, 30, 170);
+
+    camera =
+        new THREE.PerspectiveCamera(
+            75,
+            innerWidth / innerHeight,
+            0.1,
+            300
+        );
+
+    camera.position.set(0,1.7,20);
+
+    renderer =
+        new THREE.WebGLRenderer({
+            antialias:true
+        });
+
+    renderer.setSize(
+        innerWidth,
+        innerHeight
+    );
+
+    renderer.setPixelRatio(
+        Math.min(devicePixelRatio,2)
+    );
+
+    renderer.shadowMap.enabled = true;
+
+    document.body.appendChild(renderer.domElement);
+
+
+    // LIGHTING
+
+    const ambient =
+        new THREE.HemisphereLight(
+            0xffffff,
+            0x334433,
+            2
+        );
+
+    scene.add(ambient);
+
+    const sun =
+        new THREE.DirectionalLight(
+            0xffffff,
+            2.5
+        );
+
+    sun.position.set(
+        50,100,30
+    );
+
+    sun.castShadow = true;
+
+    scene.add(sun);
+
+
+    // CONTROLS
+
+    controls =
+        new PointerLockControls(
+            camera,
+            document.body
+        );
+
+    scene.add(
+        controls.getObject()
+    );
+
+
+    createMap();
+
+
+    window.addEventListener(
+        "resize",
+        onResize
+    );
+
+    window.addEventListener(
+        "keydown",
+        e => {
+            keys[e.code] = true;
+
+            if(e.code === "KeyR")
+                reload();
+
+        }
+    );
+
+    window.addEventListener(
+        "keyup",
+        e => {
+            keys[e.code] = false;
+        }
+    );
+
+    window.addEventListener(
+        "mousedown",
+        () => {
+
+            if(!controls.isLocked)
+                return;
+
+            shoot();
+
+        }
+    );
+}
+
+
+// ===============================
+// MAP
+// ===============================
+
+function createMap() {
+
+    // Ground
+
+    const ground =
+        new THREE.Mesh(
+            new THREE.PlaneGeometry(
+                WORLD_SIZE,
+                WORLD_SIZE
+            ),
+            new THREE.MeshStandardMaterial({
+                color:0x46583f
+            })
+        );
+
+    ground.rotation.x =
+        -Math.PI / 2;
+
+    ground.receiveShadow = true;
+
+    scene.add(ground);
+
+
+    // Roads
+
+    for(let i=-2;i<=2;i++) {
+
+        const road =
+            new THREE.Mesh(
+                new THREE.BoxGeometry(
+                    12,
+                    .05,
+                    WORLD_SIZE
+                ),
+                new THREE.MeshStandardMaterial({
+                    color:0x30352e
+                })
+            );
+
+        road.position.x = i * 30;
+        road.position.y = .02;
+
+        scene.add(road);
+    }
+
+
+    // Buildings
+
+    for(let i=0;i<35;i++) {
+
+        const x =
+            (Math.random()-.5)*150;
+
+        const z =
+            (Math.random()-.5)*150;
+
+        const h =
+            4 + Math.random()*8;
+
+        const building =
+            new THREE.Mesh(
+                new THREE.BoxGeometry(
+                    6+Math.random()*7,
+                    h,
+                    6+Math.random()*7
+                ),
+                new THREE.MeshStandardMaterial({
+                    color:
+                        0x555b52 +
+                        Math.floor(Math.random()*20)
+                })
+            );
+
+        building.position.set(
+            x,
+            h/2,
+            z
+        );
+
+        building.castShadow = true;
+        building.receiveShadow = true;
+
+        scene.add(building);
+    }
+
+
+    // Trees
+
+    for(let i=0;i<45;i++) {
+
+        const x =
+            (Math.random()-.5)*170;
+
+        const z =
+            (Math.random()-.5)*170;
+
+        createTree(x,z);
+    }
+}
+
+
+function createTree(x,z) {
+
+    const trunk =
+        new THREE.Mesh(
+            new THREE.CylinderGeometry(
+                .3,.45,3,8
+            ),
+            new THREE.MeshStandardMaterial({
+                color:0x4a3020
+            })
+        );
+
+    trunk.position.set(
+        x,1.5,z
+    );
+
+    scene.add(trunk);
+
+
+    const leaves =
+        new THREE.Mesh(
+            new THREE.SphereGeometry(
+                2.2,8,8
+            ),
+            new THREE.MeshStandardMaterial({
+                color:0x294d29
+            })
+        );
+
+    leaves.position.set(
+        x,4,z
+    );
+
+    leaves.castShadow = true;
+
+    scene.add(leaves);
+}
+
+
+// ===============================
+// BOTS
+// ===============================
+
+function createBot(id) {
+
+    const group =
+        new THREE.Group();
+
+
+    // Body
+
+    const body =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                1.1,1.6,.7
+            ),
+            new THREE.MeshStandardMaterial({
+                color:0x26352a
+            })
+        );
+
+    body.position.y = 1;
+
+    body.castShadow = true;
+
+    group.add(body);
+
+
+    // Head
+
+    const head =
+        new THREE.Mesh(
+            new THREE.SphereGeometry(
+                .38,16,16
+            ),
+            new THREE.MeshStandardMaterial({
+                color:0xc49a72
+            })
+        );
+
+    head.position.y = 2.15;
+
+    group.add(head);
+
+
+    // Weapon
+
+    const weapon =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                .15,.15,1.5
+            ),
+            new THREE.MeshStandardMaterial({
+                color:0x111111
+            })
+        );
+
+    weapon.position.set(
+        .55,1.35,-.65
+    );
+
+    group.add(weapon);
+
+
+    group.position.set(
+        (Math.random()-.5)*140,
+        0,
+        (Math.random()-.5)*140
+    );
+
+
+    group.userData = {
+
+        id:id,
+
+        health:100,
+
+        speed:
+            difficulty === "easy"
+            ? .008
+            : difficulty === "medium"
+            ? .014
+            : .021,
+
+        accuracy:
+            difficulty === "easy"
+            ? .15
+            : difficulty === "medium"
+            ? .40
+            : .72,
+
+        cooldown:
+            Math.random()*1500,
+
+        alive:true
+    };
+
+
+    scene.add(group);
+
+    bots.push(group);
+
+    updateBotCounter();
+}
+
+
+// ===============================
+// SHOOTING
+// ===============================
+
+function shoot() {
+
+    if(reloading)
+        return;
+
+    if(ammo <= 0) {
+
+        reload();
+
+        return;
+    }
+
+    ammo--;
+
+    updateAmmo();
+
+
+    // Raycast
+
+    const raycaster =
+        new THREE.Raycaster();
+
+    raycaster.setFromCamera(
+        new THREE.Vector2(0,0),
+        camera
+    );
+
+
+    const targets = [];
+
+    bots.forEach(bot => {
+
+        if(bot.userData.alive) {
+
+            bot.traverse(obj => {
+
+                if(obj.isMesh)
+                    targets.push(obj);
+
+            });
+
+        }
+
+    });
+
+
+    const hits =
+        raycaster.intersectObjects(
+            targets,
+            false
+        );
+
+
+    if(hits.length > 0) {
+
+        let bot =
+            hits[0].object.parent;
+
+        while(
+            bot &&
+            !bot.userData.health
+        ) {
+            bot = bot.parent;
+        }
+
+        if(bot) {
+
+            bot.userData.health -= 34;
+
+            showMessage(
+                "HIT!"
+            );
+
+            if(bot.userData.health <= 0)
+                killBot(bot);
+        }
+    }
+}
+
+
+// ===============================
+// BOT DAMAGE
+// ===============================
+
+function botShoot(bot) {
+
+    const distance =
+        bot.position.distanceTo(
+            camera.position
+        );
+
+    if(distance > 45)
+        return;
+
+
+    const accuracy =
+        bot.userData.accuracy;
+
+    const random =
+        Math.random();
+
+
+    if(random < accuracy) {
+
+        const damage =
+            difficulty === "easy"
+            ? 3
+            : difficulty === "medium"
+            ? 7
+            : 12;
+
+        takeDamage(damage);
+
+    } else {
+
+        showMessage(
+            "Enemy missed!"
+        );
+
+    }
+}
+
+
+function takeDamage(amount) {
+
+    health -= amount;
+
+    health =
+        Math.max(0,health);
+
+    healthText.textContent =
+        Math.round(health);
+
+    healthBar.style.width =
+        health + "%";
+
+
+    const damage =
+        document.getElementById(
+            "damage"
+        );
+
+    damage.style.background =
+        "rgba(255,0,0,.25)";
+
+    setTimeout(() => {
+
+        damage.style.background =
+            "rgba(255,0,0,0)";
+
+    },100);
+
+
+    if(health <= 0)
+        gameOver();
+}
+
+
+// ===============================
+// KILL BOT
+// ===============================
+
+function killBot(bot) {
+
+    bot.userData.alive = false;
+
+    scene.remove(bot);
+
+    score += 100;
+
+    scoreText.textContent =
+        score;
+
+    showMessage(
+        "+100 ELIMINATION"
+    );
+
+    updateBotCounter();
+
+
+    if(
+        bots.every(
+            b => !b.userData.alive
+        )
+    ) {
+        victory();
+    }
+}
+
+
+// ===============================
+// RELOAD
+// ===============================
+
+function reload() {
+
+    if(reloading)
+        return;
+
+    if(ammo === 30)
+        return;
+
+    if(reserveAmmo <= 0)
+        return;
+
+
+    reloading = true;
+
+    showMessage(
+        "RELOADING..."
+    );
+
+
+    setTimeout(() => {
+
+        const needed =
+            30 - ammo;
+
+        const amount =
+            Math.min(
+                needed,
+                reserveAmmo
+            );
+
+        ammo += amount;
+
+        reserveAmmo -= amount;
+
+        reloading = false;
+
+        updateAmmo();
+
+    },1200);
+}
+
+
+// ===============================
+// PLAYER MOVEMENT
+// ===============================
+
+function updatePlayer() {
+
+    if(!controls.isLocked)
+        return;
+
+
+    let speed =
+        keys["ShiftLeft"]
+        ? .13
+        : .075;
+
+
+    if(keys["KeyW"])
+        controls.moveForward(speed);
+
+    if(keys["KeyS"])
+        controls.moveForward(-speed);
+
+    if(keys["KeyA"])
+        controls.moveRight(-speed);
+
+    if(keys["KeyD"])
+        controls.moveRight(speed);
+
+
+    const p =
+        controls.getObject().position;
+
+    p.x =
+        THREE.MathUtils.clamp(
+            p.x,
+            -WORLD_SIZE/2+2,
+            WORLD_SIZE/2-2
+        );
+
+    p.z =
+        THREE.MathUtils.clamp(
+            p.z,
+            -WORLD_SIZE/2+2,
+            WORLD_SIZE/2-2
+        );
+}
+
+
+// ===============================
+// BOT AI
+// ===============================
+
+function updateBots() {
+
+    const player =
+        camera.position;
+
+
+    bots.forEach(bot => {
+
+        if(!bot.userData.alive)
+            return;
+
+
+        const distance =
+            bot.position.distanceTo(
+                player
+            );
+
+
+        // Move toward player
+
+        if(distance > 12) {
+
+            bot.lookAt(
+                player.x,
+                1,
+                player.z
+            );
+
+            bot.translateZ(
+                -bot.userData.speed
+            );
+        }
+
+
+        // Shooting
+
+        bot.userData.cooldown -= 16;
+
+        if(
+            distance < 45 &&
+            bot.userData.cooldown <= 0
+        ) {
+
+            botShoot(bot);
+
+            bot.userData.cooldown =
+                difficulty === "easy"
+                ? 2200
+                : difficulty === "medium"
+                ? 1500
+                : 900;
+        }
+    });
+}
+
+
+// ===============================
+// MINI MAP
+// ===============================
+
+function updateMiniMap() {
+
+    const canvas =
+        document.getElementById(
+            "miniMap"
+        );
+
+    const ctx =
+        canvas.getContext("2d");
+
+    canvas.width = 150;
+    canvas.height = 150;
+
+    ctx.clearRect(
+        0,0,150,150
+    );
+
+
+    const scale =
+        150 / WORLD_SIZE;
+
+    const player =
+        camera.position;
+
+
+    // Player
+
+    ctx.fillStyle =
+        "cyan";
+
+    ctx.fillRect(
+        75,
+        75,
+        6,
+        6
+    );
+
+
+    // Bots
+
+    bots.forEach(bot => {
+
+        if(!bot.userData.alive)
+            return;
+
+        const dx =
+            (bot.position.x-player.x)
+            * scale;
+
+        const dz =
+            (bot.position.z-player.z)
+            * scale;
+
+
+        if(
+            Math.abs(dx)<72 &&
+            Math.abs(dz)<72
+        ) {
+
+            ctx.fillStyle =
+                "red";
+
+            ctx.fillRect(
+                75+dx,
+                75+dz,
+                5,
+                5
+            );
+        }
+    });
+}
+
+
+// ===============================
+// UI
+// ===============================
+
+function updateAmmo() {
+
+    ammoText.textContent =
+        ammo + " / " + reserveAmmo;
+}
+
+
+function updateBotCounter() {
+
+    const alive =
+        bots.filter(
+            b => b.userData.alive
+        ).length;
+
+    botsText.textContent =
+        alive;
+}
+
+
+function showMessage(text) {
+
+    message.textContent =
+        text;
+
+    clearTimeout(
+        window.msgTimer
+    );
+
+    window.msgTimer =
+        setTimeout(() => {
+
+            message.textContent =
+                "";
+
+        },900);
+}
+
+
+// ===============================
+// GAME OVER
+// ===============================
+
+function gameOver() {
+
+    controls.unlock();
+
+    document.getElementById(
+        "gameOver"
+    ).style.display =
+        "flex";
+
+    document.getElementById(
+        "endTitle"
+    ).textContent =
+        "GAME OVER";
+
+    document.getElementById(
+        "score"
+    ).textContent =
+        "Score: " + score;
+}
+
+
+function victory() {
+
+    controls.unlock();
+
+    document.getElementById(
+        "gameOver"
+    ).style.display =
+        "flex";
+
+    document.getElementById(
+        "endTitle"
+    ).textContent =
+        "VICTORY! 🏆";
+
+    document.getElementById(
+        "score"
+    ).textContent =
+        "Final Score: " + score;
+}
+
+
+// ===============================
+// LOOP
+// ===============================
+
+function animate() {
+
+    requestAnimationFrame(
+        animate
+    );
+
+    updatePlayer();
+
+    updateBots();
+
+    updateMiniMap();
+
+    renderer.render(
+        scene,
+        camera
+    );
+}
+
+
+function onResize() {
+
+    camera.aspect =
+        innerWidth / innerHeight;
+
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(
+        innerWidth,
+        innerHeight
+    );
+}
+
+</script>
+
+</body>
+</html>
